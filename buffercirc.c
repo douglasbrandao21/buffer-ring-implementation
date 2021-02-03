@@ -10,9 +10,16 @@ typedef struct no {
   struct no *prox;
 } Elem;
 
+
+// Pointers responsible by iterate the circular list, writing and reading elements.
 Elem *writePointer = NULL;
 Elem *readPointer = NULL;
 
+
+/**
+  * Function that initialize the buffer with 40 empty positions
+  * and set the initial position of the writePointer and readPointer.
+*/
 void startBuffer() {
   Elem *head = (Elem *) malloc(sizeof(Elem));
   Elem *node = (Elem *) malloc(sizeof(Elem));
@@ -38,19 +45,51 @@ void startBuffer() {
   readPointer = head->prox;
 }
 
+
+/**
+  * Function that free the occupied memory space by the buffer.
+*/
+void deleteBuffer() {
+  Elem *currentElement = writePointer;
+  Elem *nextElement;
+
+  for(int index = 0; index < BUFFER_SIZE; index++) {
+    nextElement = currentElement->prox;
+
+    free(currentElement);
+    
+    currentElement = nextElement;
+  }
+}
+
+
+/**
+  * Function that handle the insert operation of an element from buffer.
+  * 
+  * @param char[] string: string of readed pack.
+  * @param int urgency: urgency of readed pack.
+*/
 void insert(char *string, int urgency) {
   strcpy(writePointer->pal, string);
   writePointer->urg = urgency;
 
   writePointer = writePointer->prox;
-
 }
 
-void read(FILE *output) {
-  char *readedWord;
-  strcpy(readedWord, readPointer->pal);
 
+/**
+  * Function that handle the read operation of an element from buffer.
+  * 
+  * @param FILE output: pointer to the output file.
+*/
+void read(FILE *output) {
+  // If the readPoiter and writePoiter are in the same position, there's no elements to be readed.
   if(readPointer != writePointer) {
+    char *readedWord;
+    
+    strcpy(readedWord, readPointer->pal);
+    strcpy(readPointer->pal, "/0");
+  
     if(strcmp(readedWord, "PRTY") == 0) {
       int urgency = readPointer->urg;
 
@@ -68,7 +107,14 @@ void read(FILE *output) {
   }
 }
 
-void processBuffer(FILE *input, FILE *output) {
+
+/**
+  * Function that process the readed input using the circular buffer. 
+  * 
+  * @param FILE input: pointer to the input file.
+  * @param FILE output: pointer to the output file.
+*/
+void process(FILE *input, FILE *output) {
   char string[20];
   int operation, urgency;
 
@@ -76,17 +122,18 @@ void processBuffer(FILE *input, FILE *output) {
     if(strcmp(string, "NULL") == 0) {
       fclose(input);
       fclose(output);
+
+      deleteBuffer();
       
       break;
     }
 
     else {
-      if(operation == 0) {
+      if(operation == 0)
         insert(string, urgency);
-      }
-      else if(operation == 1) {
+    
+      else if(operation == 1)
         read(output);
-      }
     }
   }
 }
@@ -95,11 +142,9 @@ int main() {
   FILE *input = fopen("./pacotes.dat", "r");
   FILE *output = fopen("./lidos.dat", "w");
 
-  Elem *buffer = NULL;
-
   startBuffer();
 
-  processBuffer(input, output);
+  process(input, output);
 
   return 0;
 }
